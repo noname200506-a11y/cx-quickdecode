@@ -1,0 +1,31 @@
+feat: CX 快速解码 v1.5.0 —— cx-E2EE 打码图的桌面快捷还原
+
+把 cx-E2EE 网页端「图片区域打码」的还原做成常驻桌面的小工具：填好密码后，
+剪贴板 / 框选截图 / 拖入文件三条路都能直接出图，结果自动进剪贴板。
+
+算法层（src/Core）是上游 src/image-crypto.js 的 C# 逐字节移植：
+- IA.hash / rng / perm（复刻 JS 的 ToInt32 / Math.imul / Uint8Clamped 语义）
+- regionEnc（块级置换 + YUV 扰动）、sortRegion、decoyExtract
+- V3 元数据：8px 边框 LSB 里的区域表 + 密码签名校验
+- 自写 PNG 编解码，避免 GDI+ 转换破坏像素最低位
+- 无元数据时按 unit / soft / 块网格偏移自动择优（块缝评分）
+- 86 项参考向量自检，与 Python/JS 参考实现逐字节一致（maxΔ=0）
+
+桌面交互（src/App）：
+- 固定尺寸悬浮窗 + 结果浮层（贴窗口上/下方、到点淡出、悬停不消失、点击看大图）
+- 悬浮球模式：左键剪贴板 / 右键托盘菜单 / Ctrl+右键截图，手势可在设置里整表自定义
+- 图库：本次运行解出的图片，支持预览、另存、批量导出
+- 设置：快捷键录制、浮层停留、悬浮球外观（默认图标 / 文字 / 自定义 png·jpg·svg，
+  缩放与旋转、背景色与不透明度）、空闲降耗
+- 命令行：--decode / --decode-clipboard / --selftest / --settings / --actions
+
+已修的坑：
+- 原生读剪贴板（FileDrop 优先）：QQ/浏览器「复制图片」时位图那一路的 LSB 已被抹掉
+- 高 DPI 下窗口位置/尺寸错乱（显式 AutoScaleMode.Dpi + 停靠布局）
+- 图库/设置/预览改为在鼠标所在屏幕居中
+- 结果浮层点击失效（MouseUp + WM_LBUTTONUP 双通道 + 悬停暂停淡出）
+- 预览窗改用常见看图逻辑：滚轮锚点缩放、拖动平移、双击适应/1:1、最大化
+- 单实例、托盘收进/唤出、空闲降耗（优先级 Idle + 收缩工作集）
+
+构建：.NET 8 SDK（WinForms），bash build.sh publish
+上游与许可：算法来自 cxxy161/cx-E2EE，详见 NOTICE.md

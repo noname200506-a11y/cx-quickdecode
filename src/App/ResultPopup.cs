@@ -22,6 +22,9 @@ internal sealed class ResultPopup : Form
 
     public event Action? OpenRequested;
 
+    /// <summary>浮层被点击（供外部排查用）</summary>
+    public bool WasClicked { get; private set; }
+
     public ResultPopup()
     {
         FormBorderStyle = FormBorderStyle.None;
@@ -43,9 +46,22 @@ internal sealed class ResultPopup : Form
             Opacity -= 0.09;
             if (Opacity <= 0.05) { _fade.Stop(); HideNow(); }
         };
-        MouseEnter += (_, _) => { _hover = true; Opacity = 1; };
+        MouseEnter += (_, _) =>
+        {
+            _hover = true;
+            _fade.Stop();
+            Opacity = 1;
+            _elapsedMs = 0;          // 停在浮层上就一直不消失
+        };
         MouseLeave += (_, _) => { _hover = false; };
-        MouseClick += (_, _) => { OpenRequested?.Invoke(); HideNow(); };
+        MouseDown += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left) Activate();
+        };
+        MouseUp += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left) FireOpen();
+        };
     }
 
     protected override bool ShowWithoutActivation => true;
@@ -62,6 +78,29 @@ internal sealed class ResultPopup : Form
     }
 
     private string _info = "";
+    private bool _openFired;
+
+    /// <summary>点击浮层 = 打开完整预览（MouseUp 与 WndProc 双通道，防重入）。</summary>
+    private void FireOpen()
+    {
+        if (_openFired) return;
+        _openFired = true;
+        AppConfig.Log("popup clicked");
+        var handler = OpenRequested;
+        HideNow();
+        try { handler?.Invoke(); }
+        catch (Exception ex) { AppConfig.Log("popup open handler failed: " + ex); }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        // 兜底：某些情况下 WinForms 的 MouseUp 事件拿不到（无激活窗口），直接看窗口消息
+        if (m.Msg == 0x0202)   // WM_LBUTTONUP
+        {
+            if (!_openFired) FireOpen();
+        }
+        base.WndProc(ref m);
+    }
     private Rectangle _anchor;
 
     /// <summary>锚点变了（悬浮球被拖动）→ 立刻重新定位，并按新位置决定放上还是放下。</summary>
@@ -117,6 +156,7 @@ internal sealed class ResultPopup : Form
         else SetPosition();
 
         Opacity = 1.0;
+        _openFired = false;
         _elapsedMs = 0;
         _totalMs = (int)Math.Clamp(seconds * 1000, 800, 60000);
         Show();
@@ -160,6 +200,15 @@ internal sealed class ResultPopup : Form
         using var txt = new SolidBrush(Color.FromArgb(150, 168, 190));
         var infoRect = new Rectangle(Pad, ClientSize.Height - InfoH - Pad + 2, ClientSize.Width - Pad * 2, InfoH);
         g.DrawString(_info, font, txt, infoRect);
+
+        // 右下角提示可点击（半透明，不抢信息）
+        using var hintFont = new Font("Microsoft YaHei UI", 8f);
+        using var hintBrush = new SolidBrush(Color.FromArgb(215, 150, 195, 255));
+        using var sf = new StringFormat { Alignment = StringAlignment.Far };
+        // 只在信息条右侧还有空位时画提示（图很小的时候不挤）
+        if (ClientSize.Width > 300)
+            g.DrawString("点击查看大图", hintFont, hintBrush,
+                new RectangleF(Pad, ClientSize.Height - InfoH - Pad + 2, ClientSize.Width - Pad * 2, InfoH), sf);
     }
 
     private void RoundedRegion()

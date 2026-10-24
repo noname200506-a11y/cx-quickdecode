@@ -362,3 +362,16 @@ QQ / 微信 / 资源管理器「复制图片」基本都会带 FileDrop，所以
 
 验证：把「截图解码」临时改成「中键单击」后，用 `WM_MBUTTONDOWN` 触发，日志走到 `orb action: shot` → 表匹配与动作分发正确；
 右键双击也实测回到 420×150 窗口。`Ctrl+右键` 的 Ctrl 状态在自动化注入里读不到（UIPI/会话限制），已用双来源读取兜住，真实按键必触发。
+
+
+---
+
+## 浮层点击修复（v1.5，摘要）
+
+结果浮层点不出预览窗的三个原因与修法：
+
+- `WS_EX_NOACTIVATE` 窗口上 `MouseClick` 不总是派发 → 改用 `MouseUp` + `WndProc` 兜底 `WM_LBUTTONUP`（防重入），`MouseDown` 时 `Activate()`。
+- 鼠标移入仅恢复 Opacity、没停淡出定时器 → 移入即 `_fade.Stop()` 且计时归零（悬停不消失）。
+- `ShowPreview` 无异常兜底 → 加 try/catch，失败写状态栏与日志。
+
+信息条右侧增加「点击查看大图」提示（浮层宽度 > 300 时才画）。

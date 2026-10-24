@@ -675,11 +675,21 @@ internal sealed class FloatForm : Form
 
     private void ShowPreview()
     {
-        if (_lastResult == null) return;
-        Wake();
-        _popup.HideNow();
-        var f = new PreviewForm(_lastResult, _lastInfo);
-        f.Show();
+        try
+        {
+            AppConfig.Log($"ShowPreview called result={(_lastResult != null ? _lastResult.W + "x" + _lastResult.H : "null")}");
+            if (_lastResult == null) return;
+            Wake();
+            _popup.HideNow();
+            var f = new PreviewForm(_lastResult, _lastInfo);
+            f.Show();
+            AppConfig.Log("preview shown");
+        }
+        catch (Exception ex)
+        {
+            AppConfig.Log("preview failed: " + ex);
+            SetStatus("打开预览失败：" + ex.Message, CBad);
+        }
     }
 
     private void SetStatus(string text, Color? color = null)

@@ -16,9 +16,10 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.0.0</Version>
+    <Version>1.5.1</Version>
     <Product>CX 快速解码</Product>
-    <FileVersion>1.0.0.0</FileVersion>
+    <FileVersion>1.5.1.0</FileVersion>
+    <AssemblyVersion>1.5.1.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

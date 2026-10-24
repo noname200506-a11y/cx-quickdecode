@@ -130,12 +130,9 @@ internal sealed class AppConfig
 
     public static void Log(string msg)
     {
-        try
-        {
-            File.AppendAllText(Path.Combine(ConfigDir, "cxq.log"),
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + msg + Environment.NewLine);
-        }
-        catch { }
+        string line = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + msg + Environment.NewLine;
+        try { File.AppendAllText(Path.Combine(ConfigDir, "cxq.log"), line); } catch { }
+        try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "cxq.log"), line); } catch { }
     }
 
     // 轻混淆（防肩窥，不是加密）
