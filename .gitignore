@@ -1,0 +1,17 @@
+# 构建产物
+bin/
+obj/
+*.exe
+*.pdb
+*.dll
+*.user
+.vs/
+
+# 运行时生成
+cxq.config.json
+cxq.portable
+*.log
+
+# 系统
+Thumbs.db
+.DS_Store
